@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-
 import argparse
+import html
 import math
 
 
@@ -27,7 +27,7 @@ def calc_ratio_theshold(ratios):
     return mean, stddev
 
 
-def calc_theshold(src_input, tgt_input):
+def calc_threshold(src_input, tgt_input):
     src_length = []
     tgt_length = []
     ratio = []
@@ -43,15 +43,44 @@ def calc_theshold(src_input, tgt_input):
 def main():
     cmdline = parse_cmdline()
 
-    with open(cmdline.inputpref + '.src', 'rb') as src_input, \
-            open(cmdline.inputref + '.tgt', 'rb') as tgt_input:
-        pass
+    with open(cmdline.inputpref + '.src') as src_input, \
+            open(cmdline.inputpref + '.tgt') as tgt_input:
+        src_max_length, tgt_max_length, mean, stddev = \
+            calc_threshold(src_input, tgt_input)
+    ratio_min = mean - 3 * stddev
+    ratio_max = mean + 3 * stddev
+    print(f"src_max_length={src_max_length}")
+    print(f"tgt_max_length={tgt_max_length}")
+    print(f"mean={mean}")
+    print(f"stddev={stddev}")
+    print(f"ratio_min={ratio_min}")
+    print(f"ratio_max={ratio_max}")
 
-    with open(cmdline.inputpref + '.src', 'rb') as src_input, \
-            open(cmdline.inputpref + '.tgt', 'rb') as tgt_input, \
-            open(cmdline.outputpref + '.src', 'wb') as src_output, \
-            open(cmdline.outputpref + '.tgt', 'wb') as tgt_output:
-        pass
+    skipped = 0
+    unique = set()
+    with open(cmdline.inputpref + '.src') as src_input, \
+            open(cmdline.inputpref + '.tgt') as tgt_input, \
+            open(cmdline.outputpref + '.src', 'w') as src_output, \
+            open(cmdline.outputpref + '.tgt', 'w') as tgt_output:
+        for src_line, tgt_line in zip(src_input, tgt_input):
+            src_length = len(src_line)
+            tgt_length = len(tgt_line)
+            ratio = src_length / tgt_length
+            if src_length > src_max_length or tgt_length > tgt_max_length \
+                    or ratio > ratio_max or ratio < ratio_min \
+                    or src_length < 5 or tgt_length < 5:
+                skipped += 1
+                continue
+            src_line = html.unescape(src_line.rstrip())
+            tgt_line = html.unescape(tgt_line.rstrip())
+            key = src_line + '\t' + tgt_line
+            if key in unique:
+                skipped += 1
+                continue
+            unique.add(key)
+            src_output.write(src_line + '\n')
+            tgt_output.write(tgt_line + '\n')
+    print(f"skipped {skipped}")
 
 
 if __name__ == '__main__':

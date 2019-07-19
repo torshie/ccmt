@@ -6,6 +6,7 @@ import sys
 import unicodedata
 import multiprocessing
 
+import tqdm
 import pytorch_pretrained_bert as bert
 
 
@@ -165,7 +166,7 @@ def main():
         if cmdline.worker != 1:
             pool = multiprocessing.Pool(processes=cmdline.worker)
             buffer = []
-            for line in input_file:
+            for line in tqdm.tqdm(input_file):
                 if len(buffer) < 768:
                     buffer.append(line.strip())
                     continue
@@ -176,7 +177,7 @@ def main():
                 for o in pool.map(tokenize, buffer):
                     print(o, file=output_file)
         else:
-            for line in input_file:
+            for line in tqdm.tqdm(input_file):
                 print(tokenize(line.strip()), file=output_file)
 
 
